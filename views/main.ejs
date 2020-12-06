@@ -17,6 +17,10 @@
 
     <div class="container">
       <h1>User funds: Rs. <%= locals.funds %></h1>
+      <form action="/user/addfund" method="POST">
+        <input type="number" name="amount" value="100" required />
+        <button class="button2" onclick="submit">Add Funds</button>
+      </form>
     </div>
   </body>
 </html>
