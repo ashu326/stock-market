@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/style.css" />
+    <title>Orders</title>
+  </head>
+
+  <body>
+    <div class="topnav">
+      <a href="/">Dashboard</a>
+      <a href="/user/instruments">Instruments</a>
+      <a href="/user/holdings">Holdings</a>
+      <a class="active" href="/orders">Orders</a>
+    </div>
+
+    <div class="container">
+      <table class="table" style="cursor: pointer">
+        <thead style="background-color: blue; color: floralwhite">
+          <tr>
+            <th>Order No.</th>
+            <th>Time</th>
+            <th>Type</th>
+            <th>Instrument</th>
+            <th>Product</th>
+            <th>Qty</th>
+            <th>LTP</th>
+            <th>Price</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (let order of locals.orders) { %>
+
+          <tr style="color: black">
+            <td><%= order.id %></td>
+            <td><%= order.time %></td>
+            <td><%= order.type %></td>
+            <td><%= order.instrument %></td>
+            <td>CNC</td>
+            <td><%= order.quantity %></td>
+            <td>100</td>
+            <td><%= order.price %></td>
+            <td><%= order.status %></td>
+            <% if(order.status == "OPEN") { %>
+            <td>
+              <form action="/orders/cancel" method="POST">
+                <input
+                  type="hidden"
+                  name="orderStatus"
+                  value="<%= order.status %>"
+                />
+                <button
+                  class="button2"
+                  name="orderId"
+                  type="submit"
+                  value="<%= order.id %>"
+                >
+                  Cancel
+                </button>
+              </form>
+              <button class="button2" onclick="openForm()">Modify</button>
+              <div class="form-popup" id="myForm">
+                <form
+                  class="form-container"
+                  method="POST"
+                  action="/orders/update"
+                >
+                  <label for="instrument"><b>Order No.</b></label>
+                  <input
+                    type="text"
+                    placeholder="<%= order.id %>"
+                    name="orderId"
+                    required
+                  />
+
+                  <label for="quantity"><b>Quantity</b></label>
+                  <input type="number" value="1" name="quantity" required />
+
+                  <label for="price"><b>Price</b></label>
+                  <input type="number" value="100.0" name="price" required />
+                  <!-- <input type="hidden" name="orderId" value="<%= order.id %>" /> -->
+
+                  <button
+                    class="button2"
+                    type="submit"
+                    name="orderType"
+                    value="buy"
+                  >
+                    Buy
+                  </button>
+                  <button
+                    class="button2"
+                    type="submit"
+                    name="orderType"
+                    value="sell"
+                  >
+                    Sell
+                  </button>
+                </form>
+                <button type="submit" class="button2" onclick="closeForm()">
+                  Close
+                </button>
+              </div>
+            </td>
+            <% } %>
+          </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+    <script>
+      function openForm() {
+        document.getElementById("myForm").style.display = "block";
+      }
+
+      function closeForm() {
+        document.getElementById("myForm").style.display = "none";
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/style.css" />
+    <title>Holdings</title>
+  </head>
+
+  <body>
+    <div class="topnav">
+      <a href="/">Dashboard</a>
+      <a href="/user/instruments">Instruments</a>
+      <a class="active" href="/user/holdings">Holdings</a>
+      <a href="/orders">Orders</a>
+    </div>
+
+    <div class="container">
+      <table class="table" style="cursor: pointer">
+        <thead style="background-color: blue; color: floralwhite">
+          <tr>
+            <th>Instrument</th>
+            <th>Qty.</th>
+            <th>Avg. cost</th>
+            <th>LTP</th>
+            <th>Cur. val</th>
+            <th>P&L</th>
+            <th>Net chg.</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (let holding of locals.userHoldings) { %>
+
+          <tr style="color: black">
+            <td><%= holding.instrument %></td>
+            <td><%= holding.quantity %></td>
+            <td><%= holding.avg_cost %></td>
+            <td><%= holding.ltp %></td>
+            <td><%= holding.curr_val %></td>
+            <% if(holding.pl > 0) { %>
+            <td style="color: green"><%= holding.pl %></td>
+            <% } else { %>
+            <td style="color: red"><%= holding.pl %></td>
+            <% } %> <% if(holding.net_change > 0) { %>
+            <td style="color: green"><%= holding.net_change %>%</td>
+            <% } else { %>
+            <td style="color: red"><%= holding.net_change %>%</td>
+            <% } %>
+            <td>
+              <button class="button2" onclick="openForm()">Sell Holding</button>
+              <div class="form-popup" id="myForm">
+                <form class="form-container" method="POST" action="/orders/new">
+                  <label for="instrument"><b>Instrument</b></label>
+                  <input
+                    type="text"
+                    placeholder="NTPC"
+                    name="instrument"
+                    required
+                  />
+
+                  <label for="quantity"><b>Quantity</b></label>
+                  <input type="number" value="1" name="quantity" required />
+
+                  <label for="price"><b>Price</b></label>
+                  <input type="number" value="100.0" name="price" required />
+
+                  <button
+                    class="button2"
+                    type="submit"
+                    name="orderType"
+                    value="sell"
+                  >
+                    Sell
+                  </button>
+                  <button type="submit" class="button2" onclick="closeForm()">
+                    Close
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="container">
+      <table class="table" style="cursor: pointer">
+        <thead style="background-color: blue; color: floralwhite">
+          <tr>
+            <th>Total Investment</th>
+            <th>Current Value</th>
+            <th>P&L</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="color: black">
+            <td><%= locals.totalInvestment %></td>
+            <td><%= locals.currentValue %></td>
+
+            <% if(locals.pl > 0) { %>
+            <td style="color: green">
+              <%= locals.pl %>(<%= locals.plPercentage %>%)
+            </td>
+            <% } else { %>
+            <td style="color: red">
+              <%= locals.pl %>(<%= locals.plPercentage %>%)
+            </td>
+            <% } %>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      function openForm() {
+        document.getElementById("myForm").style.display = "block";
+      }
+
+      function closeForm() {
+        document.getElementById("myForm").style.display = "none";
+      }
+    </script>
+  </body>
+</html>
