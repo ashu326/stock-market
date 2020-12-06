@@ -19,7 +19,11 @@ class TradeController {
       validateTradeApis.validateOrderUpdate.bind(validateTradeApis),
       this.updateOrder
     );
-    this.tradeRouter.post("/cancel", this.cancelOrder);
+    this.tradeRouter.post(
+      "/cancel",
+      validateTradeApis.validateCancelOrder,
+      this.cancelOrder
+    );
   }
 
   async getOrders(_req, res, next) {
@@ -122,9 +126,23 @@ class TradeController {
 
   async cancelOrder(req, res, next) {
     const userId = 1;
-    const { orderId, orderStatus } = req.body;
+    let { orderId, orderStatus } = req.body;
+    orderStatus = orderStatus.toUpperCase();
     try {
-      tradeDAO.cancelOrder(orderId, orderStatus);
+      let date = new Date();
+      let hr = date.getHours();
+      let min = date.getMinutes();
+      let sec = date.getSeconds();
+      let time = `${hr}:${min}:${sec}`;
+
+      await tradeDAO.cancelOrder(orderId, orderStatus, time);
+
+      let userFunds = await userDAO.getUserFunds(userId);
+
+      userFunds += res.locals.refundAmount;
+
+      await userDAO.updateUserFunds(userId, userFunds);
+
       res.redirect("/orders");
     } catch (err) {
       console.log(err);
