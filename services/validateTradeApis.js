@@ -104,6 +104,22 @@ class ValidateTradeApis {
       throw new Error(err);
     }
   }
+
+  async validateCancelOrder(req, res, next) {
+    try {
+      let orderId = req.body.orderId;
+      let userOrder = await tradeDAO.getUserOrder(orderId);
+
+      if (userOrder == undefined) {
+        throw `invalid order no.`;
+      }
+      res.locals.refundAmount = userOrder.price * userOrder.quantity;
+    } catch (err) {
+      res.render("error", { err });
+      return;
+    }
+    next();
+  }
 }
 
 module.exports = new ValidateTradeApis();
