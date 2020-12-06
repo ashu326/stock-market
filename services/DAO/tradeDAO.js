@@ -25,14 +25,14 @@ class tradeDAO {
     );
   }
 
-  async cancelOrder(orderId, status) {
+  async cancelOrder(orderId, status, time) {
     let order = await dbClient.query(
       `SELECT status from orders where id=${orderId}`
     );
     order = order.rows[0];
     if (order.status == "OPEN") {
       await dbClient.query(
-        `UPDATE orders SET status = 'CANCELED' WHERE id=${orderId}`
+        `UPDATE orders SET status = 'CANCELED', time = '${time}' WHERE id=${orderId}`
       );
     }
   }
