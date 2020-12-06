@@ -10,6 +10,7 @@ class UserController {
     this.userRouter.get("/instruments", this.getUserInstruments);
     this.userRouter.post("/addInstrument", this.addUserInstrument);
     this.userRouter.post("/deleteInstrument", this.deleteInstrument);
+    this.userRouter.post("/addfund", this.addFunds);
   }
 
   async getHoldings(_req, res, next) {
@@ -76,6 +77,21 @@ class UserController {
     const name = req.body.name.toUpperCase();
     await userDAO.removeInstrument(userId, name);
     res.redirect("/user/instruments");
+  }
+
+  async addFunds(req, res, next) {
+    try {
+      let amount = req.body.amount;
+      let userId = 1;
+
+      let userFunds = await userDAO.getUserFunds(userId);
+      userFunds += parseInt(amount);
+      await userDAO.updateUserFunds(userId, userFunds);
+
+      res.redirect("/");
+    } catch (err) {
+      console.log(err);
+    }
   }
 }
 
