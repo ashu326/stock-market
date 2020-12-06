@@ -10,11 +10,11 @@ createDbEntries = async () => {
     const client = new Client(dbConfig);
     await client.connect();
 
-    client.query(`create table funds(user_id int, amount float);`);
+    await client.query(`create table funds(user_id int, amount float);`);
 
-    client.query(`insert into funds values (1, 20000);`);
+    await client.query(`insert into funds values (1, 20000);`);
 
-    client.query(`CREATE TABLE portfolio(
+    await client.query(`CREATE TABLE portfolio(
         user_id int,
         instrument varchar(20),
         quantity int,
@@ -22,7 +22,7 @@ createDbEntries = async () => {
         ltp float
     )`);
 
-    client.query(`INSERT INTO portfolio VALUES (1, 'ASHOKA', 35, 64.23, 86.55),
+    await client.query(`INSERT INTO portfolio VALUES (1, 'ASHOKA', 35, 64.23, 86.55),
 	(1, 'AXISBANK', 3, 433, 614.5),
 	(1, 'BANDHANBNK', 10, 280, 393.4),
 	(1, 'BANKBARODA', 100, 41.8, 59.05),
@@ -44,14 +44,14 @@ createDbEntries = async () => {
 	(1, 'NETWORK18', 28, 44.65, 36.70),
     (1, 'YESBANK', 1000, 12, 15.33)`);
 
-    client.query(
+    await client.query(
       `CREATE TABLE instruments(user_id int, name varchar(20), ltp float)`
     );
-    client.query(
+    await client.query(
       `insert into instruments values(1, 'ASHOKA', 100), (1, 'GAIL', 100)`
     );
 
-    client.query(`CREATE TABLE ORDERS(id serial, user_id int, type varchar(10), instrument varchar(20), quantity int, price float, status varchar(20), time varchar(30))
+    await client.query(`CREATE TABLE ORDERS(id serial, user_id int, type varchar(10), instrument varchar(20), quantity int, price float, status varchar(20), time varchar(30))
     `);
 
     await client.end();
