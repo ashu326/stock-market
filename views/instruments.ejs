@@ -72,7 +72,7 @@
               </div>
 
               <button class="button2" onclick="openForm()">Buy</button>
-              <div class="form-popup" id="myForm">
+              <!-- <div class="form-popup" id="myForm">
                 <form class="form-container" method="POST" action="/orders/new">
                   <label for="instrument"><b>Instrument</b></label>
                   <input
@@ -96,16 +96,36 @@
                   >
                     Buy
                   </button>
-                </form>
-                <button type="submit" class="button2" onclick="closeForm()">
+                </form> -->
+              <!-- <button type="submit" class="button2" onclick="closeForm()">
                   Close
-                </button>
-              </div>
+                </button> -->
+              <!-- </div> -->
             </td>
           </tr>
           <% } %>
         </tbody>
       </table>
+    </div>
+
+    <div class="form-popup" id="myForm">
+      <form class="form-container" method="POST" action="/orders/new">
+        <label for="instrument"><b>Instrument</b></label>
+        <input type="text" placeholder="RIL" name="instrument" required />
+
+        <label for="quantity"><b>Quantity</b></label>
+        <input type="number" value="1" name="quantity" required />
+
+        <label for="price"><b>Price</b></label>
+        <input type="number" value="100.0" name="price" required />
+
+        <button class="button2" type="submit" name="orderType" value="buy">
+          Buy
+        </button>
+        <button type="submit" class="button2" onclick="closeForm()">
+          Close
+        </button>
+      </form>
     </div>
 
     <script>
