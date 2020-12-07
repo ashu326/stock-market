@@ -1,6 +1,8 @@
+/**
+ * This file starts up the express server, it requires everything that is needed to be run in project.
+ */
 require("dotenv").config();
 const express = require("express");
-const flash = require("connect-flash");
 const bodyParser = require("body-parser");
 const path = require("path");
 const db = require("./client/db");
@@ -10,6 +12,9 @@ const tradeController = require("./controllers/tradeController")
   .tradeController;
 const userDAO = require("./services/DAO/userDAO");
 
+/**
+ * express app initialised
+ */
 const app = express();
 app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "public")));
@@ -17,14 +22,15 @@ app.use(express.static(path.join(__dirname, "public")));
 /**
  * body parser to retrieve data from body
  */
-
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-app.use(flash());
 
 const userRouter = express.Router();
 const tradeRouter = express.Router();
 
+/**
+ * Calling userController helper function
+ */
 app.use("/user", userRouter);
 userController(userRouter);
 
