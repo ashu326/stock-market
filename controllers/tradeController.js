@@ -2,6 +2,9 @@ const userDAO = require("../services/DAO/userDAO");
 const tradeDAO = require("../services/DAO/tradeDAO");
 const validateTradeApis = require("../services/validateTradeApis");
 
+/**
+ * this class handles all the business logic related to trade
+ */
 class TradeController {
   constructor(tradeRouter) {
     this.tradeRouter = tradeRouter;
@@ -26,6 +29,9 @@ class TradeController {
     );
   }
 
+  /**
+   * this method fetches all the orders placed by the user in a day
+   */
   async getOrders(_req, res, next) {
     const userId = 1;
 
@@ -37,12 +43,16 @@ class TradeController {
     next();
   }
 
+  /**
+   * this method places new order by the user
+   */
   async createNewOrder(req, res, next) {
     try {
       const userId = 1;
 
       let { instrument, quantity, price, orderType } = req.body;
       orderType = orderType.toUpperCase();
+      instrument = instrument.toUpperCase();
 
       let status = "OPEN";
 
@@ -52,6 +62,9 @@ class TradeController {
       let sec = date.getSeconds();
       let time = `${hr}:${min}:${sec}`;
 
+      /**
+       * create entry in db for new order
+       */
       await tradeDAO.createNewOrder(
         userId,
         orderType,
@@ -62,6 +75,9 @@ class TradeController {
         time
       );
 
+      /**
+       * if order type is buy then detuct user funds
+       */
       if (orderType == "BUY") {
         let userFunds = res.locals.userFunds;
         userFunds = userFunds - price * quantity;
@@ -74,6 +90,9 @@ class TradeController {
     }
   }
 
+  /**
+   * this method updates placed order which is open to be executed
+   */
   async updateOrder(req, res, next) {
     const userId = 1;
     let { orderId, quantity, price, orderType } = req.body;
@@ -83,6 +102,9 @@ class TradeController {
       let placedOrderDetails = res.locals.orderDetails;
       let userFunds = await userDAO.getUserFunds(userId);
 
+      /**
+       * modify user funds according to the modification
+       */
       if (placedOrderDetails.type == "BUY" && orderType == "BUY") {
         let deductedFunds =
           placedOrderDetails.quantity * placedOrderDetails.price;
@@ -106,6 +128,9 @@ class TradeController {
       let sec = date.getSeconds();
       let time = `${hr}:${min}:${sec}`;
 
+      /**
+       * update order and user funds after order modification
+       */
       await Promise.all([
         tradeDAO.updateUserOrder(
           placedOrderDetails.id,
@@ -124,6 +149,9 @@ class TradeController {
     next();
   }
 
+  /**
+   * this method cancels an open order
+   */
   async cancelOrder(req, res, next) {
     const userId = 1;
     let { orderId, orderStatus } = req.body;
@@ -135,10 +163,16 @@ class TradeController {
       let sec = date.getSeconds();
       let time = `${hr}:${min}:${sec}`;
 
+      /**
+       * cancel the order
+       */
       await tradeDAO.cancelOrder(orderId, orderStatus, time);
 
       let userFunds = await userDAO.getUserFunds(userId);
 
+      /**
+       * refund the user
+       */
       userFunds += res.locals.refundAmount;
 
       await userDAO.updateUserFunds(userId, userFunds);
