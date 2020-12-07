@@ -3,7 +3,7 @@ const tradeDAO = require("../services/DAO/tradeDAO");
 const validateTradeApis = require("../services/validateTradeApis");
 
 /**
- * this class handles all the business logic related to trade
+ * This class handles all the business logic related to trade
  */
 class TradeController {
   constructor(tradeRouter) {
@@ -30,7 +30,10 @@ class TradeController {
   }
 
   /**
-   * this method fetches all the orders placed by the user in a day
+   * This method fetches all the orders placed by the user on a day
+   * @param {object} _req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
    */
   async getOrders(_req, res, next) {
     const userId = 1;
@@ -44,7 +47,10 @@ class TradeController {
   }
 
   /**
-   * this method places new order by the user
+   * This method places new order by the user
+   * @param {object} req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
    */
   async createNewOrder(req, res, next) {
     try {
@@ -56,14 +62,11 @@ class TradeController {
 
       let status = "OPEN";
 
-      let date = new Date();
-      let hr = date.getHours();
-      let min = date.getMinutes();
-      let sec = date.getSeconds();
-      let time = `${hr}:${min}:${sec}`;
-
       /**
        * create entry in db for new order
+       * @param {object} req - incoming request object
+       * @param {object} res - outgoing request object
+       * @param {function} next - next middleware in the request chain
        */
       await tradeDAO.createNewOrder(
         userId,
@@ -71,8 +74,7 @@ class TradeController {
         instrument,
         quantity,
         price,
-        status,
-        time
+        status
       );
 
       /**
@@ -91,7 +93,10 @@ class TradeController {
   }
 
   /**
-   * this method updates placed order which is open to be executed
+   * This method updates placed order which is open to be executed
+   * @param {object} req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
    */
   async updateOrder(req, res, next) {
     const userId = 1;
@@ -122,12 +127,6 @@ class TradeController {
         userFunds = userFunds - quantity * price;
       }
 
-      let date = new Date();
-      let hr = date.getHours();
-      let min = date.getMinutes();
-      let sec = date.getSeconds();
-      let time = `${hr}:${min}:${sec}`;
-
       /**
        * update order and user funds after order modification
        */
@@ -136,8 +135,7 @@ class TradeController {
           placedOrderDetails.id,
           orderType,
           quantity,
-          price,
-          time
+          price
         ),
         userDAO.updateUserFunds(userId, userFunds),
       ]);
@@ -150,32 +148,32 @@ class TradeController {
   }
 
   /**
-   * this method cancels an open order
+   * This method cancels an open order
+   * @param {object} req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
    */
   async cancelOrder(req, res, next) {
     const userId = 1;
     let { orderId, orderStatus } = req.body;
     orderStatus = orderStatus.toUpperCase();
     try {
-      let date = new Date();
-      let hr = date.getHours();
-      let min = date.getMinutes();
-      let sec = date.getSeconds();
-      let time = `${hr}:${min}:${sec}`;
-
       /**
        * cancel the order
        */
-      await tradeDAO.cancelOrder(orderId, orderStatus, time);
-
-      let userFunds = await userDAO.getUserFunds(userId);
+      await tradeDAO.cancelOrder(orderId, orderStatus);
+      let placedOrderType = res.locals.orderDetails.type.toUpperCase();
 
       /**
-       * refund the user
+       * refund the user if buy order was placed
        */
-      userFunds += res.locals.refundAmount;
+      if (placedOrderType == "BUY") {
+        let userFunds = await userDAO.getUserFunds(userId);
 
-      await userDAO.updateUserFunds(userId, userFunds);
+        userFunds += res.locals.refundAmount;
+
+        await userDAO.updateUserFunds(userId, userFunds);
+      }
 
       res.redirect("/orders");
     } catch (err) {
