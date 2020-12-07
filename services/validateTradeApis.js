@@ -1,9 +1,15 @@
 const userDAO = require("./DAO/userDAO");
 const tradeDAO = require("./DAO/tradeDAO");
 
+/**
+ * This class validates all the trade related request
+ */
 class ValidateTradeApis {
   /**
-   * this function validates new order request
+   * This function validates new order request
+   * @param {object} req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
    */
   async validateOrder(req, res, next) {
     const userId = 1;
@@ -66,7 +72,10 @@ class ValidateTradeApis {
   }
 
   /**
-   * this function validates update order request
+   * This function validates update order request
+   * @param {object} req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
    */
   async validateOrderUpdate(req, res, next) {
     let { orderId, quantity, price, orderType } = req.body;
@@ -93,7 +102,7 @@ class ValidateTradeApis {
         throw "Enter valid quantity";
       }
 
-      if (orderType != "BUY" || orderType != "SELL") {
+      if (orderType != "BUY" && orderType != "SELL") {
         throw "Invalid order type";
       }
 
@@ -101,6 +110,10 @@ class ValidateTradeApis {
 
       if (orderDetails == undefined) {
         throw "Invalid order no";
+      }
+
+      if (orderDetails.status.toUpperCase() == "CANCELED") {
+        throw "You cannot modify canceled order";
       }
 
       res.locals.orderDetails = orderDetails;
@@ -138,7 +151,12 @@ class ValidateTradeApis {
   }
 
   /**
-   * this method validates if user has sufficient funds to buy the stocks
+   * This method validates if user has sufficient funds to buy the stocks
+   * @param {int} userId - user id
+   * @param {float} price - instrument price
+   * @param {int} quantity - instrument quantity
+   * @param {float} placeOrderPrice - price of the order previously placed
+   * @param {object} res - outgoing request object
    */
   async validateUserFunds(userId, price, quantity, placeOrderPrice, res) {
     try {
@@ -155,7 +173,11 @@ class ValidateTradeApis {
   }
 
   /**
-   * this function validates if user has sufficient holdings before he sells it
+   * This function validates if user has sufficient holdings before he sells it
+   * @param {int} userId - user id
+   * @param {string} instrument - name of the instrument
+   * @param {int} quantity - instrument quantity
+   * @param {object} res - outgoing request object
    */
   async validateUserHoldings(userId, instrument, quantity, res) {
     try {
@@ -165,7 +187,7 @@ class ValidateTradeApis {
       );
 
       if (holdingDetails.length == 0) {
-        throw "user dont have this holding.....";
+        throw "You don't have sufficient holding for this stock";
       }
 
       if (holdingDetails[0].quantity < quantity) {
@@ -179,7 +201,10 @@ class ValidateTradeApis {
   }
 
   /**
-   * this function validates if cancel order params are valid
+   * This function validates if cancel order params are valid
+   * @param {object} req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
    */
   async validateCancelOrder(req, res, next) {
     try {
@@ -190,6 +215,7 @@ class ValidateTradeApis {
         throw `invalid order no.`;
       }
       res.locals.refundAmount = userOrder.price * userOrder.quantity;
+      res.locals.orderDetails = userOrder;
     } catch (err) {
       res.render("error", { err });
       return;
