@@ -1,6 +1,9 @@
 const userDAO = require("../services/DAO/userDAO");
 const validateUserApis = require("../services/validateUserApis");
 
+/**
+ * This class handles all the business logic related to trade
+ */
 class UserController {
   constructor(userRouter) {
     this.userRouter = userRouter;
@@ -19,7 +22,10 @@ class UserController {
   }
 
   /**
-   * this method fetches user portfolio(holdings and profit and losses)
+   * This method fetches user portfolio(holdings, profit and losses)
+   * @param {object} _req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
    */
   async getHoldings(_req, res, next) {
     const userId = 1;
@@ -65,7 +71,10 @@ class UserController {
   }
 
   /**
-   * this method fetches all the instruments added by the user
+   * This method fetches all the instruments added by the user
+   * @param {object} _req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
    */
   async getUserInstruments(_req, res, next) {
     const userId = 1;
@@ -74,7 +83,10 @@ class UserController {
   }
 
   /**
-   * this method adds new instrument by the user
+   * This method adds a new instrument by the user
+   * @param {object} req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
    */
   async addUserInstrument(req, res, next) {
     const userId = 1;
@@ -87,7 +99,10 @@ class UserController {
   }
 
   /**
-   * this method deletes the instrument added by the user
+   * This method deletes the instrument added by the user
+   * @param {object} req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
    */
   async deleteInstrument(req, res, next) {
     const userId = 1;
@@ -97,7 +112,10 @@ class UserController {
   }
 
   /**
-   * this method adds fund for the user
+   * This method adds fund for the user
+   * @param {object} req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
    */
   async addFunds(req, res, next) {
     try {
