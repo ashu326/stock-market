@@ -8,7 +8,7 @@ const dbClient = require("../../client/db").client;
 class tradeDAO {
   async getOrders(userId) {
     let orders = await dbClient.query(
-      `SELECT * FROM orders WHERE user_id = ${userId} AND date = CURRENT_DATE ORDER BY time`
+      `SELECT * FROM orders WHERE user_id = ${userId} AND date = CURRENT_DATE ORDER BY time desc`
     );
 
     return orders.rows;
