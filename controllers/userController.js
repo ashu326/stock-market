@@ -1,4 +1,5 @@
 const userDAO = require("../services/DAO/userDAO");
+const validateUserApis = require("../services/validateUserApis");
 
 class UserController {
   constructor(userRouter) {
@@ -10,9 +11,16 @@ class UserController {
     this.userRouter.get("/instruments", this.getUserInstruments);
     this.userRouter.post("/addInstrument", this.addUserInstrument);
     this.userRouter.post("/deleteInstrument", this.deleteInstrument);
-    this.userRouter.post("/addfund", this.addFunds);
+    this.userRouter.post(
+      "/addfund",
+      validateUserApis.validateAddFunds,
+      this.addFunds
+    );
   }
 
+  /**
+   * this method fetches user portfolio(holdings and profit and losses)
+   */
   async getHoldings(_req, res, next) {
     const userId = 1;
     let userHoldings = await userDAO.getUserHoldings(userId);
@@ -56,12 +64,18 @@ class UserController {
     next();
   }
 
+  /**
+   * this method fetches all the instruments added by the user
+   */
   async getUserInstruments(_req, res, next) {
     const userId = 1;
     let userInstruments = await userDAO.getUserInstruments(userId);
     res.render("instruments", { userInstruments });
   }
 
+  /**
+   * this method adds new instrument by the user
+   */
   async addUserInstrument(req, res, next) {
     const userId = 1;
     let name = req.body.name;
@@ -72,6 +86,9 @@ class UserController {
     next();
   }
 
+  /**
+   * this method deletes the instrument added by the user
+   */
   async deleteInstrument(req, res, next) {
     const userId = 1;
     const name = req.body.name.toUpperCase();
@@ -79,6 +96,9 @@ class UserController {
     res.redirect("/user/instruments");
   }
 
+  /**
+   * this method adds fund for the user
+   */
   async addFunds(req, res, next) {
     try {
       let amount = req.body.amount;
