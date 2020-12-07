@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: controllers/tradeController.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: controllers/tradeController.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const userDAO = require("../services/DAO/userDAO");
+const tradeDAO = require("../services/DAO/tradeDAO");
+const validateTradeApis = require("../services/validateTradeApis");
+
+/**
+ * This class handles all the business logic related to trade
+ */
+class TradeController {
+  constructor(tradeRouter) {
+    this.tradeRouter = tradeRouter;
+    this.registerRoutes();
+  }
+  registerRoutes() {
+    this.tradeRouter.get("/", this.getOrders);
+    this.tradeRouter.post(
+      "/new",
+      validateTradeApis.validateOrder.bind(validateTradeApis),
+      this.createNewOrder
+    );
+    this.tradeRouter.post(
+      "/update",
+      validateTradeApis.validateOrderUpdate.bind(validateTradeApis),
+      this.updateOrder
+    );
+    this.tradeRouter.post(
+      "/cancel",
+      validateTradeApis.validateCancelOrder,
+      this.cancelOrder
+    );
+  }
+
+  /**
+   * This method fetches all the orders placed by the user on a day
+   * @param {object} _req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
+   */
+  async getOrders(_req, res, next) {
+    const userId = 1;
+
+    let orders = await tradeDAO.getOrders(userId);
+
+    res.render("orders", {
+      orders,
+    });
+    next();
+  }
+
+  /**
+   * This method places new order by the user
+   * @param {object} req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
+   */
+  async createNewOrder(req, res, next) {
+    try {
+      const userId = 1;
+
+      let { instrument, quantity, price, orderType } = req.body;
+      orderType = orderType.toUpperCase();
+      instrument = instrument.toUpperCase();
+
+      let status = "OPEN";
+
+      /**
+       * create entry in db for new order
+       * @param {object} req - incoming request object
+       * @param {object} res - outgoing request object
+       * @param {function} next - next middleware in the request chain
+       */
+      await tradeDAO.createNewOrder(
+        userId,
+        orderType,
+        instrument,
+        quantity,
+        price,
+        status
+      );
+
+      /**
+       * if order type is buy then detuct user funds
+       */
+      if (orderType == "BUY") {
+        let userFunds = res.locals.userFunds;
+        userFunds = userFunds - price * quantity;
+        await userDAO.updateUserFunds(userId, userFunds);
+      }
+
+      res.redirect("/orders");
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  /**
+   * This method updates placed order which is open to be executed
+   * @param {object} req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
+   */
+  async updateOrder(req, res, next) {
+    const userId = 1;
+    let { orderId, quantity, price, orderType } = req.body;
+    orderType = orderType.toUpperCase();
+
+    try {
+      let placedOrderDetails = res.locals.orderDetails;
+      let userFunds = await userDAO.getUserFunds(userId);
+
+      /**
+       * modify user funds according to the modification
+       */
+      if (placedOrderDetails.type == "BUY" &amp;&amp; orderType == "BUY") {
+        let deductedFunds =
+          placedOrderDetails.quantity * placedOrderDetails.price;
+        userFunds = userFunds + deductedFunds;
+        userFunds = userFunds - quantity * price;
+      }
+
+      if (placedOrderDetails.type == "BUY" &amp;&amp; orderType == "SELL") {
+        let deductedFunds =
+          placedOrderDetails.quantity * placedOrderDetails.price;
+        userFunds = userFunds + deductedFunds;
+      }
+
+      if (placedOrderDetails.type == "SELL" &amp;&amp; orderType == "BUY") {
+        userFunds = userFunds - quantity * price;
+      }
+
+      /**
+       * update order and user funds after order modification
+       */
+      await Promise.all([
+        tradeDAO.updateUserOrder(
+          placedOrderDetails.id,
+          orderType,
+          quantity,
+          price
+        ),
+        userDAO.updateUserFunds(userId, userFunds),
+      ]);
+
+      res.redirect("/orders");
+    } catch (err) {
+      console.log(err);
+    }
+    next();
+  }
+
+  /**
+   * This method cancels an open order
+   * @param {object} req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
+   */
+  async cancelOrder(req, res, next) {
+    const userId = 1;
+    let { orderId, orderStatus } = req.body;
+    orderStatus = orderStatus.toUpperCase();
+    try {
+      /**
+       * cancel the order
+       */
+      await tradeDAO.cancelOrder(orderId, orderStatus);
+      let placedOrderType = res.locals.orderDetails.type.toUpperCase();
+
+      /**
+       * refund the user if buy order was placed
+       */
+      if (placedOrderType == "BUY") {
+        let userFunds = await userDAO.getUserFunds(userId);
+
+        userFunds += res.locals.refundAmount;
+
+        await userDAO.updateUserFunds(userId, userFunds);
+      }
+
+      res.redirect("/orders");
+    } catch (err) {
+      console.log(err);
+    }
+    next();
+  }
+}
+
+const tradeController = (tradeRouter) => new TradeController(tradeRouter);
+
+module.exports = {
+  tradeController,
+  TradeController,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="TradeController.html">TradeController</a></li><li><a href="tradeDAO.html">tradeDAO</a></li><li><a href="UserController.html">UserController</a></li><li><a href="UserDAO.html">UserDAO</a></li><li><a href="ValidateTradeApis.html">ValidateTradeApis</a></li><li><a href="ValidateUserApis.html">ValidateUserApis</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Mon Dec 07 2020 18:46:43 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

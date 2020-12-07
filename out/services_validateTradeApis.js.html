@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: services/validateTradeApis.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: services/validateTradeApis.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const userDAO = require("./DAO/userDAO");
+const tradeDAO = require("./DAO/tradeDAO");
+
+/**
+ * This class validates all the trade related request
+ */
+class ValidateTradeApis {
+  /**
+   * This function validates new order request
+   * @param {object} req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
+   */
+  async validateOrder(req, res, next) {
+    const userId = 1;
+    try {
+      let orderType = req.body.orderType.toUpperCase();
+      let instrument = req.body.instrument.toUpperCase();
+      const quantity = req.body.quantity;
+      const price = req.body.price;
+
+      /**
+       * check if quantity and price are numbers
+       */
+      if (isNaN(quantity)) {
+        throw "Enter valid quantity";
+      }
+
+      if (isNaN(price)) {
+        throw "Enter valid price";
+      }
+
+      /**
+       * check if user sends negative quantity for stocks
+       */
+      if (quantity &lt; 0) {
+        throw "Quantity cannot be negative";
+      }
+
+      /**
+       * check if user places negative price for any stock
+       */
+      if (price &lt; 0) {
+        throw "Price of the stock cannot be negative";
+      }
+
+      /**
+       * if order is sell type check that user has sufficent holdings to sell
+       */
+      if (orderType == "SELL") {
+        await this.validateUserHoldings(userId, instrument, quantity, res);
+      }
+
+      /**
+       * if order is buy then check if user has sufficient funds to buy the stocks
+       */
+      if (orderType == "BUY") {
+        let placeOrderPrice = 0;
+        await this.validateUserFunds(
+          userId,
+          price,
+          quantity,
+          placeOrderPrice,
+          res
+        );
+      }
+    } catch (err) {
+      res.render("error", { err });
+      return;
+    }
+    next();
+  }
+
+  /**
+   * This function validates update order request
+   * @param {object} req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
+   */
+  async validateOrderUpdate(req, res, next) {
+    let { orderId, quantity, price, orderType } = req.body;
+    let userId = 1;
+    orderType = orderType.toUpperCase();
+    try {
+      if (isNaN(orderId)) {
+        throw "Invalid order no.";
+      }
+
+      if (isNaN(quantity)) {
+        throw "Enter valid quantity";
+      }
+
+      if (isNaN(price)) {
+        throw "Enter valid price";
+      }
+
+      if (price &lt; 0) {
+        throw "Enter valid price";
+      }
+
+      if (quantity &lt; 1) {
+        throw "Enter valid quantity";
+      }
+
+      if (orderType != "BUY" &amp;&amp; orderType != "SELL") {
+        throw "Invalid order type";
+      }
+
+      let orderDetails = await tradeDAO.getUserOrder(orderId);
+
+      if (orderDetails == undefined) {
+        throw "Invalid order no";
+      }
+
+      if (orderDetails.status.toUpperCase() == "CANCELED") {
+        throw "You cannot modify canceled order";
+      }
+
+      res.locals.orderDetails = orderDetails;
+
+      /**
+       * if order is sell type check that user has sufficent holdings to sell
+       */
+      if (orderType == "SELL") {
+        await this.validateUserHoldings(
+          userId,
+          orderDetails.instrument,
+          quantity,
+          res
+        );
+      }
+
+      /**
+       * if order is buy then check if user has sufficient funds to buy the stocks
+       */
+      if (orderType == "BUY") {
+        let placeOrderPrice = orderDetails.quantity * orderDetails.price;
+        await this.validateUserFunds(
+          userId,
+          price,
+          quantity,
+          placeOrderPrice,
+          res
+        );
+      }
+    } catch (err) {
+      res.render("error", { err });
+      return;
+    }
+    next();
+  }
+
+  /**
+   * This method validates if user has sufficient funds to buy the stocks
+   * @param {int} userId - user id
+   * @param {float} price - instrument price
+   * @param {int} quantity - instrument quantity
+   * @param {float} placeOrderPrice - price of the order previously placed
+   * @param {object} res - outgoing request object
+   */
+  async validateUserFunds(userId, price, quantity, placeOrderPrice, res) {
+    try {
+      let userFunds = await userDAO.getUserFunds(userId);
+      res.locals.userFunds = userFunds;
+      userFunds = userFunds + placeOrderPrice;
+
+      if (userFunds &lt; price * quantity) {
+        throw "insufficient funds";
+      }
+    } catch (err) {
+      throw new Error(err);
+    }
+  }
+
+  /**
+   * This function validates if user has sufficient holdings before he sells it
+   * @param {int} userId - user id
+   * @param {string} instrument - name of the instrument
+   * @param {int} quantity - instrument quantity
+   * @param {object} res - outgoing request object
+   */
+  async validateUserHoldings(userId, instrument, quantity, res) {
+    try {
+      let holdingDetails = await userDAO.getUserHoldingDetails(
+        userId,
+        instrument
+      );
+
+      if (holdingDetails.length == 0) {
+        throw "You don't have sufficient holding for this stock";
+      }
+
+      if (holdingDetails[0].quantity &lt; quantity) {
+        throw `user has less holding than ${quantity}`;
+      }
+
+      res.locals.holdingDetails = holdingDetails;
+    } catch (err) {
+      throw new Error(err);
+    }
+  }
+
+  /**
+   * This function validates if cancel order params are valid
+   * @param {object} req - incoming request object
+   * @param {object} res - outgoing request object
+   * @param {function} next - next middleware in the request chain
+   */
+  async validateCancelOrder(req, res, next) {
+    try {
+      let orderId = req.body.orderId;
+      let userOrder = await tradeDAO.getUserOrder(orderId);
+
+      if (userOrder == undefined) {
+        throw `invalid order no.`;
+      }
+      res.locals.refundAmount = userOrder.price * userOrder.quantity;
+      res.locals.orderDetails = userOrder;
+    } catch (err) {
+      res.render("error", { err });
+      return;
+    }
+    next();
+  }
+}
+
+module.exports = new ValidateTradeApis();
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="TradeController.html">TradeController</a></li><li><a href="tradeDAO.html">tradeDAO</a></li><li><a href="UserController.html">UserController</a></li><li><a href="UserDAO.html">UserDAO</a></li><li><a href="ValidateTradeApis.html">ValidateTradeApis</a></li><li><a href="ValidateUserApis.html">ValidateUserApis</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Mon Dec 07 2020 18:46:43 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
