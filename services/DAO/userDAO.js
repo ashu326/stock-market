@@ -3,6 +3,10 @@ const { client } = require("../../client/db");
 const dbClient = require("../../client/db").client;
 
 class UserDAO {
+  /**
+   * method fetches user holdings
+   * @param {integer} userId
+   */
   async getUserHoldings(userId) {
     const userHoldings = await dbClient.query(
       `SELECT * FROM portfolio WHERE user_id = ${userId}`
